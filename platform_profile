@@ -1,0 +1,339 @@
+#!/bin/bash
+
+############################# Android 环境配置 #############################
+export ANDROID_SDK_PATH="$HOME/Workspace/Android/sdk"
+export ANDROID_NDK_PATH="$ANDROID_SDK_PATH/ndk"
+export ANDROID_NDK_VERSION_DEFAULT="22.1.7171670"
+
+############################# HarmonyOS 环境配置 #############################
+export HMOS_SDK_PATH="$HOME/Workspace/Huawei/sdk/HarmonyOS-NEXT-DP1"
+
+# Android cmake
+android_cmake() {
+    print_usage() {
+        echo "Usage:"
+        echo "  android_cmake -h|--help"
+        echo "  android_cmake [cmake-args]"
+        echo "  android_cmake --ndk-version=21 --abi=arm64-v8a --api=21 --stl=c++_shared [other-cmake-args]"
+        echo "    --ndk-version: ndk的版本号(可以只写主版本, 如22) 如果不指定，则默认为 \${ANDROID_NDK_VERSION_DEFAULT}, 如果指定的版本不存在，则返回错误"
+        echo "    --abi: 指定abi，支持的值有 armeabi-v7a, arm64-v8a, x86-64, x86"
+        echo "    --api: 指定api等级"
+        echo "    --stl: 指定stl库，支持的值有 c++_shared, c++_static, system, none. 不指定默认为c++_shared"
+    }
+    local ndk_version abi api_level stl
+
+    local sum_args=$#
+    local other_args=()
+    for ((i=1; i<=sum_args; i++)); do
+        local arg=${!i}
+        case "$arg" in
+            -h|--help)
+                print_usage
+                return
+                ;;
+            --ndk-version=*)
+                ndk_version=${arg#*=}
+                ;;
+            --abi=*)
+                abi=${arg#*=}
+                ;;
+            --api=*)
+                api_level=${arg#*=}
+                ;;
+            --stl=*)
+                stl=${arg#*=}
+                ;;
+            *)
+                other_args+=("$arg")
+                ;;
+        esac
+    done
+
+    if [ -z "$abi" ] && [ -z "$api_level" ] && [ -z "$stl" ] && [ -z "$ndk_version" ]; then
+        cmake ${other_args[@]}
+        return $?
+    fi
+
+    if [ -z "$ndk_version" ]; then
+        ndk_version=$ANDROID_NDK_VERSION_DEFAULT
+        if [ -z "$ndk_version" ]; then
+            echo "ndk version is not specified!"
+            print_usage
+            return 1
+        fi
+    fi
+
+    case "$ndk_version" in
+        '26')
+            ndk_version="26.3.11579264"
+            ;;
+        '25')
+            ndk_version="25.2.9519653"
+            ;;
+        '24')
+            ndk_version="24.0.8215888"
+            ;;
+        '23')
+            ndk_version="23.2.8568313"
+            ;;
+        '22')
+            ndk_version="22.1.7171670"
+            ;;
+        '21')
+            ndk_version="21.4.7075529"
+            ;;
+        '20')
+            ndk_version="20.1.5948944"
+            ;;
+        '19')
+            ndk_version="19.2.5345600"
+            ;;
+    esac
+
+	case "$abi" in
+		'armeabi-v7a'|'arm64-v8a'|'x86-64'|'x86')
+			;;
+		*)
+			echo "unknown abi: $abi"
+            print_usage
+			return 1;
+			;;
+	esac
+
+    if [ -z "$api_level" ]; then
+        echo "api level is not specified!"
+        print_usage
+        return 1
+    fi
+
+    if [ -z "$stl" ]; then
+        stl="c++_shared"
+    fi
+
+    case "$stl" in
+        'c++_shared'|'c++_static'|'system'|'none')
+            ;;
+        *)
+            echo "unknown stl: $stl"
+            print_usage
+            return 1;
+            ;;
+    esac
+
+    local ndk_path="$ANDROID_NDK_PATH/$ndk_version"
+    if ! [ -d "$ndk_path" ]; then
+        echo "ndk path ($ndk_path) is not exits! pls check it!"
+        return
+    fi
+
+	local toolchain_file="$ndk_path/build/cmake/android.toolchain.cmake"
+	if ! [ -f "$toolchain_file" ]; then
+		echo "toolchain file ($toolchain_file) is not exits! pls check it!"
+		return 1
+	fi
+
+	echo "android cmake: version($ndk_version), abi($abi), api($api_level), stl($stl), other_args(${other_args[@]})"
+
+	cmake -DCMAKE_TOOLCHAIN_FILE=$toolchain_file \
+        -DANDROID_ABI=$abi \
+        -DANDROID_NDK=$ndk_path \
+        -DANDROID_NATIVE_API_LEVEL=android-$api_level \
+        -DANDROID_TOOLCHAIN=clang \
+        -DANDROID_STL=$stl ${other_args[@]} || return 1
+    return $?
+}
+
+# HarmonyOS cmake
+hmos_cmake() {
+    print_usage() {
+        echo "Usage:"
+        echo "  hmos_cmake --help|-h"
+        echo "  hmos_cmake [cmake-args]"
+        echo "  hmos_cmake --abi=armeabi-v7a|arm64-v8a|x86-64|x86 --stl=c++_shared|c++_static [cmake-args]"
+        echo "    --abi: armeabi-v7a|arm64-v8a|x86-64|x86 必须指定"
+        echo "    --stl: c++_shared, c++_static 默认为c++_shared"
+    }
+    if ! [ -d $HMOS_SDK_PATH ]; then
+        echo "HMOS_SDK_PATH not found: $HMOS_SDK_PATH"
+        return 1
+    fi
+
+    local abi stl build
+    local sum_args=$# other_args=()
+    for ((i=1; i<=$sum_args; i++)); do
+        eval "local arg=\${$i}"
+        case "$arg" in
+            -h|--help)
+                print_usage
+                return 1
+                ;;
+            --abi=*)
+                abi=${arg#--abi=}
+                ;;
+            --stl=*)
+                stl=${arg#--stl=}
+                ;;
+            *)
+                other_args+=($arg)
+                ;;
+        esac
+    done
+
+    local HMOS_NDK_PATH="$HMOS_SDK_PATH/base/native"
+    local HMOS_CMAKE_PATH="$HMOS_NDK_PATH/build-tools/cmake/bin"
+    local HMOS_CMAKE_TOOLCHAIN_FILE="$HMOS_NDK_PATH/build/cmake/ohos.toolchain.cmake"
+
+    # 使用 HarmonyOS 的 CMake
+	local mypath=${PATH/$HMOS_CMAKE_PATH:/}
+	if [[ "$mypath" = "$PATH" ]]; then
+		export PATH="$HMOS_CMAKE_PATH:$PATH"
+	fi
+
+
+    if [ -z "$abi" ] && [ -z "$stl" ]; then
+        cmake ${other_args[@]}
+        return $?
+    fi
+
+    if [ -z "$abi" ]; then
+        echo "Error: --abi=armeabi-v7a|arm64-v8a|x86-64|x86 必须指定"
+        print_usage
+        return 1
+    fi
+
+    if [ -z "$stl" ]; then
+        stl=c++_shared
+    fi
+
+    echo "hmos_cmake --abi=$abi --stl=$stl ${other_args[@]}"
+	cmake -DOHOS_STL=c++_shared \
+          -DOHOS_ARCH=$abi \
+          -DOHOS_PLATFORM=OHOS \
+          -DCMAKE_TOOLCHAIN_FILE=$OHOS_CMAKE_TOOLCHAIN_FILE ${other_args[@]} || return 1
+    return $?
+}
+
+# build and install
+native_build() {
+    print_usage() {
+        echo "Usage:"
+        echo "  native_build -h|--help"
+        echo "  native_build --os=android --abi=armeabi-v7a --api=21 --stl=c++_shared --source=/path/to/source [other-cmake-args]"
+        echo "  native_build --os=android --abi=arm64-v8a --source=/path/to/source --clean"
+        echo "     --os:  android, harmonyos, 如果没有指定，则默认为localos，即本地系统"
+        echo "     --abi: armeabi-v7a, arm64-v8a, x86, x86_64  必须指定"
+        echo "     --api: android api level 只有在os为android时有效，如果没有指定，则默认为21"
+        echo "     --ndk-version: android ndk version 只有在os为android时有效，只需要指定主版本号即可，如果没有指定，则默认为ANDROID_NDK_VERSION_DEFAULT"
+        echo "     --stl: c++_shared, c++_static, 只有在os为android和harmonyos时有效，如果没有指定，则默认为c++_shared"
+        echo "     --source: 源码地址，只可以是本地路径, 如果没有指定，则默认为当前路径"
+        echo "     [other-cmake-args]: 其他的cmake参数"
+        echo "     --clean: 清除编译目录"
+        echo "编译目录为 source/build/{os}/{abi}"
+        echo "安装目录为 source/build_install/{os}/{abi}"
+    }
+
+    local os='localos' abi api ndk_version stl source_dir
+
+    local sum_args=$#
+    local other_args=() clean=false
+    for (( i = 1; i <= sum_args; i++ )); do
+        local arg=${!i}
+        case "$arg" in
+            -h|--help)
+                print_usage
+                return
+                ;;
+            --os=*)
+                os=${arg#--os=}
+                ;;
+            --abi=*)
+                abi=${arg#--abi=}
+                ;;
+            --api=*)
+                api=${arg#--api=}
+                ;;
+            --source=*)
+                source_dir="${arg#--source=}"
+                ;;
+            --ndk-version=*)
+                ndk_version="${arg#--ndk-version=}"
+                ;;
+            --stl=*)
+                stl="${arg#--stl=}"
+                ;;
+            --clean)
+                clean=true
+                ;;
+            *)
+                other_args+=("$arg")
+                ;;
+        esac
+    done
+
+    # check os
+    if [ "$os" != 'android' ] && [ "$os" != 'harmonyos' ] && [ "$os" != 'localos' ]; then
+        echo "OS($os) is not supported"
+        print_usage
+        return 1
+    fi
+
+    if [ "$os" = 'localos' ]; then
+        echo "build for local os"
+    fi
+
+    # check abi
+    if [ -z $abi ]; then
+        echo "--abi is required"
+        print_usage
+        return 1
+    fi
+    case $abi in
+        armeabi-v7a|arm64-v8a|x86|x86_64)
+            ;;
+        *)
+            echo "unsupported abi: $abi"
+            print_usage
+            return 1
+            ;;
+    esac
+
+    # check source
+    if [ -z $source_dir ]; then
+        source_dir=$(pwd)
+    fi
+
+    if ! [ -d $source_dir ]; then
+        echo "source($source) is not a directory"
+        print_usage
+        return 1
+    fi
+
+    # build dir
+    local build_dir="$source_dir/build/$os/$abi"
+    [ -d $build_dir ] || mkdir -p $build_dir
+
+    if [ "$clean" = true ]; then
+        rm -rf $build_dir
+        echo "clean $build_dir"
+        return
+    fi
+
+    local install_dir="$source_dir/build_install/$os/$abi"
+
+    cd $build_dir
+
+    local build_args=("--abi=$abi")
+    [ -z "$stl" ] || build_args+=("--stl=$stl")
+
+    if [ $os = 'android' ]; then
+        [ -z "$api" ] || build_args+=("--api=$api")
+        [ -z "$ndk_version" ] || build_args+=("--ndk-version=$ndk_version")
+
+        android_cmake ${build_args[@]} ${other_args[@]} $source_dir && android_cmake --build . &&  android_cmake --install . --prefix "$install_dir"
+    elif [ $os = 'harmonyos' ]; then
+        hmos_cmake ${build_args[@]} ${other_args[@]} $source_dir && hmos_cmake --build . && hmos_cmake --install . --prefix "$install_dir"
+    else
+        cmake ${other_args[@]} $source_dir && cmake --build . && cmake --install . --prefix "$install_dir"
+    fi
+    return $?
+}
