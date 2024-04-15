@@ -2,21 +2,21 @@
 
 # https://chromium.googlesource.com/libyuv/libyuv 
 # ./build.sh --os=android --abi=arm64-v8a --ndk_version=22 --api=21
-#
+# ./build.sh --os=harmonyos --abi=arm64-v8a
 
 # set -x
 
-LOCAL_DIR=$(pwd)
 SCRIPT_DIR=$(cd `dirname $0`; pwd)
-
 cd $SCRIPT_DIR && source ../platform_profile 
 
-name="libyuv"
+name="libyuv-stable"
+repourl="https://chromium.googlesource.com/libyuv/libyuv"
 
 if ! [ -d $name ]; then
-    echo "source code not found, clone from https://chromium.googlesource.com/libyuv/libyuv"
-    git clone --branch stable https://chromium.googlesource.com/libyuv/libyuv $name
+    echo "source code not found, clone from $repourl"
+    git clone --branch stable $repourl $name
 fi
+cd $name || exit -1
 
 # 对于 arm64-v8a 架构.
 # 如果出现 
@@ -30,4 +30,4 @@ fi
 # 或者下载老版本
 # git clone --branch stable https://chromium.googlesource.com/libyuv/libyuv $name
 
-cd $name && native_build $@
+native_build $@

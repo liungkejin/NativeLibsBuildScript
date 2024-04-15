@@ -1,9 +1,9 @@
 # NativeLibsBuildScript
-提供常见开源(C/C++)库针对Android/HarmonyOS 等平台的一键编译脚本
+提供常见开源(C/C++)库针对 Android/HarmonyOS 等平台的一键编译脚本
 
 ## 使用方法
 
-首先打开 platform_profile
+打开 platform_profile
 
 配置 android sdk 和 默认 ndk 版本
 
@@ -65,12 +65,26 @@ echo "编译目录为 source/build/{os}/{abi}"
 echo "安装目录为 source/build_install/{os}/{abi}"
 ```
 
+此函数实际执行了下面的命令
+
+```shell
+cmake ${source_dir} && cmake --build . && cmake --install . --prefix ${install_dir}
+```
+
 ### 例子
 
 ```shell
 source ../platform_profile
 
-native_build --os=android --abi=arm64-v8a --api=21 --source=./libyuv
-
-native_build --os=harmonyos --abi=arm64-v8a --source=./libyuv
+native_build --os=android --abi=arm64-v8a --api=21 --source=./opencv \
+        -DBUILD_SHARED_LIBS=OFF \
+        -DANDROID_CPP_FEATURES="rtti exceptions" \
+        -DWITH_CUDA=OFF \
+        -DWITH_MATLAB=OFF \
+        -DBUILD_opencv_java=OFF \
+        -DBUILD_ANDROID_PROJECTS=OFF \
+        -DBUILD_ANDROID_EXAMPLES=OFF \
+        -DBUILD_DOCS=OFF \
+        -DBUILD_PERF_TESTS=OFF \
+        -DBUILD_TESTS=OFF 
 ```

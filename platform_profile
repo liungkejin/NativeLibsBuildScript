@@ -322,18 +322,24 @@ native_build() {
 
     cd $build_dir
 
-    local build_args=("--abi=$abi")
+    local build_args=("--abi=$abi" "-DCMAKE_BUILD_TYPE=Release")
     [ -z "$stl" ] || build_args+=("--stl=$stl")
 
     if [ $os = 'android' ]; then
         [ -z "$api" ] || build_args+=("--api=$api")
         [ -z "$ndk_version" ] || build_args+=("--ndk-version=$ndk_version")
 
-        android_cmake ${build_args[@]} ${other_args[@]} $source_dir && android_cmake --build . &&  android_cmake --install . --prefix "$install_dir"
+        android_cmake ${build_args[@]} ${other_args[@]} "$source_dir" && \
+            android_cmake --build . &&  \
+            android_cmake --install . --prefix "$install_dir"
     elif [ $os = 'harmonyos' ]; then
-        hmos_cmake ${build_args[@]} ${other_args[@]} $source_dir && hmos_cmake --build . && hmos_cmake --install . --prefix "$install_dir"
+        hmos_cmake ${build_args[@]} ${other_args[@]} "$source_dir" && \
+            hmos_cmake --build . && \
+            hmos_cmake --install . --prefix "$install_dir"
     else
-        cmake ${other_args[@]} $source_dir && cmake --build . && cmake --install . --prefix "$install_dir"
+        cmake ${other_args[@]} "$source_dir" && \
+            cmake --build . && \
+            cmake --install . --prefix "$install_dir"
     fi
     return $?
 }
