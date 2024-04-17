@@ -206,10 +206,12 @@ hmos_cmake() {
     fi
 
     echo "hmos_cmake --abi=$abi --stl=$stl ${other_args[@]}"
-	cmake -DOHOS_STL=c++_shared \
+    #type cmake
+    #echo "toolchain file: $HMOS_CMAKE_TOOLCHAIN_FILE"
+	cmake -DCMAKE_TOOLCHAIN_FILE=$HMOS_CMAKE_TOOLCHAIN_FILE \
+          -DOHOS_STL=c++_shared \
           -DOHOS_ARCH=$abi \
-          -DOHOS_PLATFORM=OHOS \
-          -DCMAKE_TOOLCHAIN_FILE=$OHOS_CMAKE_TOOLCHAIN_FILE ${other_args[@]} || return 1
+          -DOHOS_PLATFORM=OHOS ${other_args[@]} || return 1
     return $?
 }
 
