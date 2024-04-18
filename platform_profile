@@ -6,7 +6,7 @@ export ANDROID_NDK_PATH="$ANDROID_SDK_PATH/ndk"
 export ANDROID_NDK_VERSION_DEFAULT="22.1.7171670"
 
 ############################# HarmonyOS 环境配置 #############################
-export HMOS_SDK_PATH="$HOME/Workspace/Huawei/sdk/HarmonyOS-NEXT-DP1"
+export HMOS_SDK_PATH="$HOME/Workspace/Huawei/sdk/HarmonyOS-NEXT-DP2"
 
 # Android cmake
 android_cmake() {
