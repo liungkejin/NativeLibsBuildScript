@@ -1,7 +1,9 @@
 #!/bin/bash
 
 ############################# Android 环境配置 #############################
-export ANDROID_SDK_PATH="$HOME/Workspace/Android/sdk"
+if [[ -z $ANDROID_SDK_PATH ]]; then
+    export ANDROID_SDK_PATH="$HOME/Workspace/Android/sdk"
+fi
 export ANDROID_NDK_PATH="$ANDROID_SDK_PATH/ndk"
 export ANDROID_NDK_VERSION_DEFAULT="22.1.7171670"
 
@@ -328,7 +330,8 @@ native_build() {
     [ -z "$stl" ] || build_args+=("--stl=$stl")
 
     if [ $os = 'android' ]; then
-        [ -z "$api" ] || build_args+=("--api=$api")
+        [ -z "$api" ] && api=21
+        build_args+=("--api=$api")
         [ -z "$ndk_version" ] || build_args+=("--ndk-version=$ndk_version")
 
         android_cmake ${build_args[@]} ${other_args[@]} "$source_dir" && \
