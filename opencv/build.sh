@@ -7,24 +7,9 @@
 SCRIPT_DIR=$(cd `dirname $0`; pwd)
 cd $SCRIPT_DIR && source ../platform_profile 
 
-# 处理源代码目录的相对路径
-ALL_ARGS=()
-USER_SOURCE_DIR=""
-for arg in "$@"; do
-    case "$arg" in
-        --source=*)
-            # 获取绝对路径
-            rel_path="${arg#--source=}"
-            USER_SOURCE_DIR="$(cd $rel_path && pwd)"
-            ALL_ARGS+=("--source=$USER_SOURCE_DIR")
-            ;;
-        *)
-            ALL_ARGS+=("$arg")
-            ;;
-    esac
-done
+parse_arguments "$@"
 
-if [[ -z "$USER_SOURCE_DIR" ]]; then
+if [[ -z "$BUILD_ARG_SOURCE_DIR" ]]; then
     name="opencv-4.9.0"
     repourl="git@github.com:opencv/opencv.git"
 
@@ -36,8 +21,8 @@ if [[ -z "$USER_SOURCE_DIR" ]]; then
     [[ -d $name ]] || exit -1
 
     # 如果没有指定源代码目录，则使用默认目录
-    USER_SOURCE_DIR="$SCRIPT_DIR/$name"
-    ALL_ARGS+=("--source=$USER_SOURCE_DIR")
+    BUILD_ARG_SOURCE_DIR="$SCRIPT_DIR/$name"
+    ALL_BUILD_ARGS+=("--source=$BUILD_ARG_SOURCE_DIR")
 fi
 
 # 如果需要编译动态库
@@ -51,4 +36,4 @@ native_build -DBUILD_SHARED_LIBS=OFF \
         -D BUILD_ANDROID_EXAMPLES=OFF \
         -D BUILD_DOCS=OFF \
         -D BUILD_PERF_TESTS=OFF \
-        -D BUILD_TESTS=OFF "${ALL_ARGS[@]}"
+        -D BUILD_TESTS=OFF "${ALL_BUILD_ARGS[@]}"

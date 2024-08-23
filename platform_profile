@@ -9,7 +9,7 @@ export ANDROID_NDK_VERSION_DEFAULT="22.1.7171670"
 
 ############################# HarmonyOS 环境配置 #############################
 #export HMOS_SDK_PATH="$HOME/Workspace/Huawei/sdk/HarmonyOS-NEXT-DP2"
-export HMOS_SDK_PATH="/Applications/DevEco-Studio.app/Contents/sdk/HarmonyOS-NEXT-DB2"
+export HMOS_SDK_PATH="/Applications/DevEco-Studio.app/Contents/sdk/HarmonyOS-NEXT-DB3"
 
 # Android cmake
 android_cmake() {
@@ -215,7 +215,7 @@ hmos_cmake() {
     #type cmake
     #echo "toolchain file: $HMOS_CMAKE_TOOLCHAIN_FILE"
 	cmake -DCMAKE_TOOLCHAIN_FILE=$HMOS_CMAKE_TOOLCHAIN_FILE \
-          -DOHOS_STL=c++_shared \
+          -DOHOS_STL=$stl \
           -DOHOS_ARCH=$abi \
           -DOHOS_PLATFORM=OHOS ${other_args[@]} || return 1
     return $?
@@ -351,4 +351,50 @@ native_build() {
             cmake --install . --prefix "$install_dir"
     fi
     return $?
+}
+
+# 解析参数，用于自定义脚本时，可以判断系统，架构等等
+# 解析后的参数都会存放在 ALL_BUILD_ARGS=() 中
+# 单个的参数会以 BUILD_ARG_ 开头存放在对应的变量中, 具体有
+export BUILD_ARG_SOURCE_DIR
+export BUILD_ARG_ABI
+export BUILD_ARG_API
+export BUILD_ARG_OS
+export BUILD_ARG_NDK_VERSION
+export BUILD_ARG_STL
+export ALL_BUILD_ARGS=()
+parse_arguments() {
+    for arg in "$@"; do
+        case "$arg" in
+            --os=*)
+                BUILD_ARG_OS=${arg#--os=}
+                ALL_BUILD_ARGS+=("$arg")
+                ;;
+            --abi=*)
+                BUILD_ARG_ABI=${arg#--abi=}
+                ALL_BUILD_ARGS+=("$arg")
+                ;;
+            --api=*)
+                BUILD_ARG_API=${arg#--api=}
+                ALL_BUILD_ARGS+=("$arg")
+                ;;
+            --ndk-version=*)
+                BUILD_ARG_NDK_VERSION="${arg#--ndk-version=}"
+                ALL_BUILD_ARGS+=("$arg")
+                ;;
+            --stl=*)
+                BUILD_ARG_STL="${arg#--stl=}"
+                ALL_BUILD_ARGS+=("$arg")
+                ;;
+            --source=*)
+                # 获取绝对路径
+                local rel_path="${arg#--source=}"
+                BUILD_ARG_SOURCE_DIR="$(cd $rel_path && pwd)"
+                ALL_BUILD_ARGS+=("--source=$USER_SOURCE_DIR")
+                ;;
+            *)
+                ALL_BUILD_ARGS+=("$arg")
+                ;;
+        esac
+    done
 }
