@@ -8,7 +8,7 @@ export ANDROID_NDK_PATH="$ANDROID_SDK_PATH/ndk"
 export ANDROID_NDK_VERSION_DEFAULT="22.1.7171670"
 
 ############################# HarmonyOS 环境配置 #############################
-export HMOS_SDK_PATH="$HOME/Workspace/Huawei/sdk/HarmonyOS-NEXT-DP1"
+export HMOS_SDK_PATH="/Applications/DevEco-Studio.app/Contents/sdk/default"
 
 # Android cmake
 android_cmake() {
@@ -181,7 +181,7 @@ hmos_cmake() {
         esac
     done
 
-    local HMOS_NDK_PATH="$HMOS_SDK_PATH/base/native"
+    local HMOS_NDK_PATH="$HMOS_SDK_PATH/openharmony/native"
     local HMOS_CMAKE_PATH="$HMOS_NDK_PATH/build-tools/cmake/bin"
     local HMOS_CMAKE_TOOLCHAIN_FILE="$HMOS_NDK_PATH/build/cmake/ohos.toolchain.cmake"
 
