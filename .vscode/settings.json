@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "api.h": "c",
+        "cpuinfo.h": "c",
+        "log.h": "c",
+        "regex": "cpp"
+    }
+}

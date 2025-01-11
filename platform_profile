@@ -316,7 +316,7 @@ native_build() {
     fi
 
     # build dir
-    local build_dir="$source_dir/build/$os/$abi"
+    local build_dir="$source_dir/zzz_build/$os/$abi"
     [ -d $build_dir ] || mkdir -p $build_dir
 
     if [ "$clean" = true ]; then
@@ -325,7 +325,7 @@ native_build() {
         return
     fi
 
-    local install_dir="$source_dir/build_install/$os/$abi"
+    local install_dir="$source_dir/zzz_build_install/$os/$abi"
 
     cd $build_dir
 
